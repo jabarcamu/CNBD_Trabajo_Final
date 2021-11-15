@@ -17,10 +17,10 @@ public class RankCalculateReduce extends Reducer<Text, Text, Text, Text> {
         String links = "";
         String pageWithRank;
         
-        // For each otherPage: 
-        // - check control characters
-        // - calculate pageRank share <rank> / count(<links>)
-        // - add the share to sumShareOtherPageRanks
+        // Para cada otherPage: 
+        // - Verificar caracteres de contro
+        // - calcular pageRank compartido <rank>/ contar(<links>)
+        // - anhdir el compartido a el sumShareOtherPageRanks        
         for (Text value : values){
             pageWithRank = value.toString();
             

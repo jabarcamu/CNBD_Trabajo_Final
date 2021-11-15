@@ -17,9 +17,9 @@ public class WikiPageLinksMapper extends Mapper<LongWritable, Text, Text, Text> 
     @Override
     public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
         
-        // Returns  String[0] = <title>[TITLE]</title>
-        //          String[1] = <text>[CONTENT]</text>
-        // !! without the <tags>.
+        // Retorna  String[0] = <title>[TITULO]</title>
+        //          String[1] = <text>[CONTENIDO]</text>
+        // !! sin los <tags>.        
         String[] titleAndText = parseTitleAndText(value);
         
         String pageString = titleAndText[0];
@@ -30,18 +30,18 @@ public class WikiPageLinksMapper extends Mapper<LongWritable, Text, Text, Text> 
 
         Matcher matcher = wikiLinksPattern.matcher(titleAndText[1]);
         
-        //Loop through the matched links in [CONTENT]
+        //Iterar a traves de los links emparejados en [CONTENIDO]        
         while (matcher.find()) {
             String otherPage = matcher.group();
-            //Filter only wiki pages.
-            //- some have [[realPage|linkName]], some single [realPage]
-            //- some link to files or external pages.
-            //- some link to paragraphs into other pages.
+            // Filtrar solo paginas wikipedia
+            //- algunos tienen [[realPage|linkName]], algunos simples [realPage]
+            //- algunos link desde archivos o paginas externas
+            //- algunos link desde parrafos dentro de otra paginas            
             otherPage = getWikiPageFromLink(otherPage);
             if(otherPage == null || otherPage.isEmpty()) 
                 continue;
             
-            // add valid otherPages to the map.
+            // aniadir otherPages validos a el map    
             context.write(page, new Text(otherPage));
         }
     }
@@ -86,7 +86,7 @@ public class WikiPageLinksMapper extends Mapper<LongWritable, Text, Text, Text> 
         
         int start = value.find("<title>");
         int end = value.find("</title>", start);
-        start += 7; //add <title> length.
+        start += 7; //aniadir tamanho <title> .
         
         titleAndText[0] = Text.decode(value.getBytes(), start, end-start);
 
@@ -121,8 +121,8 @@ public class WikiPageLinksMapper extends Mapper<LongWritable, Text, Text, Text> 
         if( firstChar == '-') return true;
         if( firstChar == '{') return true;
         
-        if( aLink.contains(":")) return true; // Matches: external links and translations links
-        if( aLink.contains(",")) return true; // Matches: external links and translations links
+        if( aLink.contains(":")) return true; // Emparejados: links externos y links traducidos
+        if( aLink.contains(",")) return true; // Emparejados: links externos y links traducidos
         if( aLink.contains("&")) return true;
         
         return false;

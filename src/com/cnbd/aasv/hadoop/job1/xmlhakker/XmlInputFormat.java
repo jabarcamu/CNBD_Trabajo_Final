@@ -1,20 +1,3 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.cnbd.aasv.hadoop.job1.xmlhakker;
 
 import org.apache.hadoop.conf.Configuration;
@@ -33,7 +16,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import java.io.IOException;
 
 /**
- * Reads records that are delimited by a specific begin/end tag.
+ * Lee los registro que son delimitados por un tag especifico inicio/fin.
  */
 public class XmlInputFormat extends TextInputFormat {
 
@@ -50,8 +33,8 @@ public class XmlInputFormat extends TextInputFormat {
     }
 
     /**
-     * XMLRecordReader class to read through a given xml document to output xml
-     * blocks as records as specified by the start tag and end tag
+     * La clase XMLRecordReader lee a traves de un documento xml dado en bloques 
+     * xml registrados tan especificos desde el tag inicial al final     
      */
     public static class XmlRecordReader extends RecordReader<LongWritable, Text> {
         private final byte[] startTag;
@@ -70,7 +53,7 @@ public class XmlInputFormat extends TextInputFormat {
             startTag = conf.get(START_TAG_KEY).getBytes("utf-8");
             endTag = conf.get(END_TAG_KEY).getBytes("utf-8");
 
-            // open the file and seek to the start of the split
+            // abrir el archivo y buscar al inicio de la division            
             start = split.getStart();
             end = start + split.getLength();
             Path file = split.getPath();
@@ -125,18 +108,18 @@ public class XmlInputFormat extends TextInputFormat {
         private boolean readUntilMatch(byte[] match, boolean withinBlock) throws IOException {
             int i = 0;
             while (true) {
-                int b = fsin.read();
-                // end of file:
+                int b = fsin.read();                
+                // fin del file:
                 if (b == -1) return false;
-                // save to buffer:
+                // almacenar en buffer:
                 if (withinBlock) buffer.write(b);
 
-                // check if we're matching:
+                // verificar si estar emparejando:                
                 if (b == match[i]) {
                     i++;
                     if (i >= match.length) return true;
                 } else i = 0;
-                // see if we've passed the stop point:
+                // ver si paso al punto de parada                
                 if (!withinBlock && i == 0 && fsin.getPos() >= end) return false;
             }
         }

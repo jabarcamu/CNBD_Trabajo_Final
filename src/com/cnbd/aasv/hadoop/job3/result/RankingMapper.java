@@ -27,7 +27,7 @@ public class RankingMapper extends Mapper<LongWritable, Text, FloatWritable, Tex
         int tabPageIndex = value.find("\t");
         int tabRankIndex = value.find("\t", tabPageIndex + 1);
         
-        // no tab after rank (when there are no links)
+        // sin tabs despues de rank(cuando no hay links)        
         int end;
         if (tabRankIndex == -1) {
             end = value.getLength() - (tabPageIndex + 1);
