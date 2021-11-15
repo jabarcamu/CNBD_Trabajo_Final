@@ -1,4 +1,4 @@
-package com.xebia.sandbox.hadoop.job3.result;
+package com.cnbd.aasv.hadoop.job3.result;
 
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.LongWritable;
