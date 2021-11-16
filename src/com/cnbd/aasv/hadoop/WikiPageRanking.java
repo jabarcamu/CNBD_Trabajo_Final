@@ -151,7 +151,7 @@ public class WikiPageRanking extends Configured implements Tool {
         invertedIndex.setJarByClass(WikiPageRanking.class);
 
         invertedIndex.setOutputKeyClass(Text.class);
-        invertedIndex.setOutputValueClass(IntWritable.class);
+        invertedIndex.setOutputValueClass(Text.class);
 
         FileInputFormat.setInputPaths(invertedIndex, new Path(inputPath));
         FileOutputFormat.setOutputPath(invertedIndex, new Path(outputPath));
