@@ -8,6 +8,8 @@ import com.cnbd.aasv.hadoop.job2.calculate.RankCalculateReduce;
 import com.cnbd.aasv.hadoop.job3.result.RankingMapper;
 import com.cnbd.aasv.hadoop.job4.WordCountMapper;
 import com.cnbd.aasv.hadoop.job4.WordCountReducer;
+import com.cnbd.aasv.hadoop.job5.InvertedIndexMapper;
+import com.cnbd.aasv.hadoop.job5.InvertedIndexReducer;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -53,6 +55,8 @@ public class WikiPageRanking extends Configured implements Tool {
 
         isCompleted = runRankOrdering(lastResultPath, "wiki/result");
         isCompleted = runWordCount("wiki/result", "wiki/count");
+
+        isCompleted = runInvertedIndex("wiki/result", "wiki/inverted");
 
         if (!isCompleted) return 1;
         return 0;
@@ -138,6 +142,24 @@ public class WikiPageRanking extends Configured implements Tool {
         wordCount.setReducerClass(WordCountReducer.class);
 
         return wordCount.waitForCompletion(true);
+    }
+
+    private boolean runInvertedIndex(String inputPath, String outputPath) throws IOException, ClassNotFoundException, InterruptedException {
+        Configuration conf = new Configuration();
+
+        Job invertedIndex = Job.getInstance(conf, "invertedIndex");
+        invertedIndex.setJarByClass(WikiPageRanking.class);
+
+        invertedIndex.setOutputKeyClass(Text.class);
+        invertedIndex.setOutputValueClass(Text.class);
+
+        FileInputFormat.setInputPaths(invertedIndex, new Path(inputPath));
+        FileOutputFormat.setOutputPath(invertedIndex, new Path(outputPath));
+
+        invertedIndex.setMapperClass(InvertedIndexMapper.class);
+        invertedIndex.setReducerClass(InvertedIndexReducer.class);
+
+        return invertedIndex.waitForCompletion(true);
 
     }
 }
