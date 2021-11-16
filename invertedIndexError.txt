@@ -1,0 +1,333 @@
+  
+import java.io.IOException;
+import java.util.StringTokenizer;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+
+
+import org.apache.hadoop.conf.Configured;
+
+import org.apache.hadoop.io.FloatWritable;
+
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
+
+
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.io.DataOutputBuffer;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+
+import java.io.IOException;
+import java.nio.charset.CharacterCodingException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+
+public class InvertedIndex {
+
+  /**
+ * Lee los registro que son delimitados por un tag especifico inicio/fin.
+ */
+public static class XmlInputFormat extends TextInputFormat {
+
+    public static final String START_TAG_KEY = "xmlinput.start";
+    public static final String END_TAG_KEY = "xmlinput.end";
+
+    @Override
+    public RecordReader<LongWritable, Text> createRecordReader(InputSplit split, TaskAttemptContext context) {
+        try {
+            return new XmlRecordReader((FileSplit) split, context);
+        } catch (IOException e) {
+            throw new RuntimeException("TODO : refactor this...");
+        }
+    }
+
+    /**
+     * La clase XMLRecordReader lee a traves de un documento xml dado en bloques 
+     * xml registrados tan especificos desde el tag inicial al final     
+     */
+    public static class XmlRecordReader extends RecordReader<LongWritable, Text> {
+        private final byte[] startTag;
+        private final byte[] endTag;
+        private final long start;
+        private final long end;
+        private final FSDataInputStream fsin;
+        private final DataOutputBuffer buffer = new DataOutputBuffer();
+
+        private LongWritable key = new LongWritable();
+        private Text value = new Text();
+
+
+        public XmlRecordReader(FileSplit split, TaskAttemptContext context) throws IOException {
+            Configuration conf = context.getConfiguration();
+            startTag = conf.get(START_TAG_KEY).getBytes("utf-8");
+            endTag = conf.get(END_TAG_KEY).getBytes("utf-8");
+
+            // abrir el archivo y buscar al inicio de la division            
+            start = split.getStart();
+            end = start + split.getLength();
+            Path file = split.getPath();
+            FileSystem fs = file.getFileSystem(conf);
+            fsin = fs.open(split.getPath());
+            fsin.seek(start);
+        }
+
+        @Override
+        public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+        }
+
+        @Override
+        public boolean nextKeyValue() throws IOException, InterruptedException {
+            if (fsin.getPos() < end) {
+                if (readUntilMatch(startTag, false)) {
+                    try {
+                        buffer.write(startTag);
+                        if (readUntilMatch(endTag, true)) {
+                            key.set(fsin.getPos());
+                            value.set(buffer.getData(), 0, buffer.getLength());
+                            return true;
+                        }
+                    } finally {
+                        buffer.reset();
+                    }
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public LongWritable getCurrentKey() throws IOException, InterruptedException {
+            return key;
+        }
+
+        @Override
+        public Text getCurrentValue() throws IOException, InterruptedException {
+            return value;
+        }
+
+        @Override
+        public void close() throws IOException {
+            fsin.close();
+        }
+
+        @Override
+        public float getProgress() throws IOException {
+            return (fsin.getPos() - start) / (float) (end - start);
+        }
+
+        private boolean readUntilMatch(byte[] match, boolean withinBlock) throws IOException {
+            int i = 0;
+            while (true) {
+                int b = fsin.read();                
+                // fin del file:
+                if (b == -1) return false;
+                // almacenar en buffer:
+                if (withinBlock) buffer.write(b);
+
+                // verificar si estar emparejando:                
+                if (b == match[i]) {
+                    i++;
+                    if (i >= match.length) return true;
+                } else i = 0;
+                // ver si paso al punto de parada                
+                if (!withinBlock && i == 0 && fsin.getPos() >= end) return false;
+            }
+        }
+    }
+}
+	
+
+public static class WikiPageLinksMapper extends Mapper<LongWritable, Text, Text, Text> {
+    
+    @Override
+    public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+        
+        // Retorna  String[0] = <title>[TITULO]</title>
+        //          String[1] = <text>[CONTENIDO]</text>
+        // !! sin los <tags>.        
+        String[] titleAndText = parseTitleAndText(value);
+        
+        String pageString = titleAndText[0];
+        if(notValidPage(pageString))
+            return;
+        
+        Text page = new Text(pageString.replace(' ', '_'));
+
+        // obtener la cantidad de palabras que componen el titulo y mappear
+        // para el indice invertido.                	            
+  	    StringTokenizer itr = new StringTokenizer(page.toString().toLowerCase());
+         
+        while (itr.hasMoreTokens()) {			 
+            context.write(new Text(itr.nextToken()), page);
+        }        
+    }
+    
+    private boolean notValidPage(String pageString) {
+        return pageString.contains(":");
+    }
+
+    private String getWikiPageFromLink(String aLink){
+        if(isNotWikiLink(aLink)) return null;
+        
+        int start = aLink.startsWith("[[") ? 2 : 1;
+        int endLink = aLink.indexOf("]");
+
+        int pipePosition = aLink.indexOf("|");
+        if(pipePosition > 0){
+            endLink = pipePosition;
+        }
+        
+        int part = aLink.indexOf("#");
+        if(part > 0){
+            endLink = part;
+        }
+        
+        aLink =  aLink.substring(start, endLink);
+        aLink = aLink.replaceAll("\\s", "_");
+        aLink = aLink.replaceAll(",", "");
+        aLink = sweetify(aLink);
+        
+        return aLink;
+    }
+    
+    private String sweetify(String aLinkText) {
+        if(aLinkText.contains("&amp;"))
+            return aLinkText.replace("&amp;", "&");
+
+        return aLinkText;
+    }
+
+    private String[] parseTitleAndText(Text value) throws CharacterCodingException {
+        String[] titleAndText = new String[2];
+        
+        int start = value.find("<title>");
+        int end = value.find("</title>", start);
+        start += 7; //aniadir tamanho <title> .
+        
+        titleAndText[0] = Text.decode(value.getBytes(), start, end-start);
+
+        start = value.find("<text");
+        start = value.find(">", start);
+        end = value.find("</text>", start);
+        start += 1;
+        
+        if(start == -1 || end == -1) {
+            return new String[]{"",""};
+        }
+        
+        titleAndText[1] = Text.decode(value.getBytes(), start, end-start);
+        
+        return titleAndText;
+    }
+
+    private boolean isNotWikiLink(String aLink) {
+        int start = 1;
+        if(aLink.startsWith("[[")){
+            start = 2;
+        }
+        
+        if( aLink.length() < start+2 || aLink.length() > 100) return true;
+        char firstChar = aLink.charAt(start);
+        
+        if( firstChar == '#') return true;
+        if( firstChar == ',') return true;
+        if( firstChar == '.') return true;
+        if( firstChar == '&') return true;
+        if( firstChar == '\'') return true;
+        if( firstChar == '-') return true;
+        if( firstChar == '{') return true;
+        
+        if( aLink.contains(":")) return true; // Emparejados: links externos y links traducidos
+        if( aLink.contains(",")) return true; // Emparejados: links externos y links traducidos
+        if( aLink.contains("&")) return true;
+        
+        return false;
+    }
+}
+
+
+  public static class WikiLinksReducer extends Reducer<Text,Text,Text,Text> {
+  
+
+    public void reduce(Text keyword, Iterable<Text> docIDList, Context context) 
+    		throws IOException, InterruptedException {
+      
+    	HashMap<String,Integer> hashtable = new HashMap<String,Integer>();
+    	  Iterator<Text> itr = docIDList.iterator();
+    	   int count = 0;
+    	   String docID = new String();
+    	   
+    	   while (itr.hasNext()) {
+    		   docID = itr.next().toString();
+	 	 
+		    if(hashtable.containsKey(docID)){
+		    	     count = (hashtable.get(docID));
+		    	     count += 1;
+		    	     hashtable.put(docID, count);	
+	    	    }else{
+		   	hashtable.put(docID, 1);
+		    }
+    	   }
+    	   
+    	   StringBuffer buf = new StringBuffer("");
+	   for(Map.Entry<String, Integer> h: hashtable.entrySet())    
+		buf.append(h.getKey() + ":" + h.getValue() + "\t");   
+	  
+		  
+	    Text optext = new Text(buf.toString());
+        context.write(keyword, optext);
+   
+    }
+  }
+
+  public static void main(String[] args) throws Exception {
+	    
+        Configuration conf = new Configuration();
+        conf.set(XmlInputFormat.START_TAG_KEY, "<page>");
+        conf.set(XmlInputFormat.END_TAG_KEY, "</page>");
+
+        Job xmlHakker = Job.getInstance(conf, "xmlHakker");
+        xmlHakker.setJarByClass(InvertedIndex.class);
+
+        // Input / Mapper
+        FileInputFormat.addInputPath(xmlHakker, new Path(args[0]));
+        xmlHakker.setInputFormatClass(XmlInputFormat.class);
+        xmlHakker.setMapperClass(WikiPageLinksMapper.class);
+        xmlHakker.setMapOutputKeyClass(Text.class);
+
+        // Output / Reducer
+        FileOutputFormat.setOutputPath(xmlHakker, new Path(args[1]));
+        xmlHakker.setOutputFormatClass(TextOutputFormat.class);
+
+        xmlHakker.setOutputKeyClass(Text.class);
+        xmlHakker.setOutputValueClass(Text.class);
+        xmlHakker.setReducerClass(WikiLinksReducer.class);
+
+	    
+	    System.exit(xmlHakker.waitForCompletion(true) ? 0 : 1);
+
+  }
+}
+
