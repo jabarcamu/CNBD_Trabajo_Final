@@ -147,7 +147,7 @@ public class WikiPageRanking extends Configured implements Tool {
     private boolean runInvertedIndex(String inputPath, String outputPath) throws IOException, ClassNotFoundException, InterruptedException {
         Configuration conf = new Configuration();
 
-        Job invertedIndex = Job.getInstance(conf, "wordCount");
+        Job invertedIndex = Job.getInstance(conf, "invertedIndex");
         invertedIndex.setJarByClass(WikiPageRanking.class);
 
         invertedIndex.setOutputKeyClass(Text.class);
