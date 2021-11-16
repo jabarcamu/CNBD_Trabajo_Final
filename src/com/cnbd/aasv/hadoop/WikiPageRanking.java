@@ -6,6 +6,9 @@ import com.cnbd.aasv.hadoop.job1.xmlhakker.XmlInputFormat;
 import com.cnbd.aasv.hadoop.job2.calculate.RankCalculateMapper;
 import com.cnbd.aasv.hadoop.job2.calculate.RankCalculateReduce;
 import com.cnbd.aasv.hadoop.job3.result.RankingMapper;
+import com.cnbd.aasv.hadoop.job4.WordCountMapper;
+import com.cnbd.aasv.hadoop.job4.WordCountReducer;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -18,6 +21,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.hadoop.io.IntWritable;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -48,6 +52,7 @@ public class WikiPageRanking extends Configured implements Tool {
         }
 
         isCompleted = runRankOrdering(lastResultPath, "wiki/result");
+        isCompleted = runWordCount("wiki/result", "wiki/count");
 
         if (!isCompleted) return 1;
         return 0;
@@ -117,4 +122,22 @@ public class WikiPageRanking extends Configured implements Tool {
         return rankOrdering.waitForCompletion(true);
     }
 
+    private boolean runWordCount(String inputPath, String outputPath) throws IOException, ClassNotFoundException, InterruptedException {
+        Configuration conf = new Configuration();
+
+        Job wordCount = Job.getInstance(conf, "wordCount");
+        wordCount.setJarByClass(WikiPageRanking.class);
+
+        wordCount.setOutputKeyClass(Text.class);
+        wordCount.setOutputValueClass(IntWritable.class);
+
+        FileInputFormat.setInputPaths(wordCount, new Path(inputPath));
+        FileOutputFormat.setOutputPath(wordCount, new Path(outputPath));
+
+        wordCount.setMapperClass(WordCountMapper.class);
+        wordCount.setReducerClass(WordCountReducer.class);
+
+        return wordCount.waitForCompletion(true);
+
+    }
 }
