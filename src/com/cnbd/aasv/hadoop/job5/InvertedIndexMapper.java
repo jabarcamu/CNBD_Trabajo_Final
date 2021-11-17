@@ -21,7 +21,6 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text> 
     private Text word = new Text();
     private WikiClean cleaner = new WikiClean.Builder()
             .withFooter(false)
-            .withLanguage(WikiClean.WikiLanguage.EN)
             .withTitle(false)
             .build();
 

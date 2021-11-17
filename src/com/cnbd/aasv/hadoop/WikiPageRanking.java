@@ -56,7 +56,7 @@ public class WikiPageRanking extends Configured implements Tool {
         isCompleted = runRankOrdering(lastResultPath, "wiki/result");
         isCompleted = runWordCount("wiki/result", "wiki/count");
 
-        isCompleted = runInvertedIndex("wiki/ranking/iter00", "wiki/inverted");
+        isCompleted = runInvertedIndex("wiki/in", "wiki/inverted");
 
         if (!isCompleted) return 1;
         return 0;
@@ -147,18 +147,26 @@ public class WikiPageRanking extends Configured implements Tool {
     private boolean runInvertedIndex(String inputPath, String outputPath) throws IOException, ClassNotFoundException, InterruptedException {
         Configuration conf = new Configuration();
 
+        conf.set(XmlInputFormat.START_TAG_KEY, "<page>");
+        conf.set(XmlInputFormat.END_TAG_KEY, "</page>");
+
         Job invertedIndex = Job.getInstance(conf, "invertedIndex");
         invertedIndex.setJarByClass(WikiPageRanking.class);
 
+        // Input / Mapper
+        FileInputFormat.addInputPath(invertedIndex, new Path(inputPath));
+        invertedIndex.setInputFormatClass(XmlInputFormat.class);
+        invertedIndex.setMapperClass(InvertedIndexMapper.class);
+        invertedIndex.setMapOutputKeyClass(Text.class);
+
+        // Output / Reducer
+        FileOutputFormat.setOutputPath(invertedIndex, new Path(outputPath));
+        invertedIndex.setOutputFormatClass(TextOutputFormat.class);
+
         invertedIndex.setOutputKeyClass(Text.class);
         invertedIndex.setOutputValueClass(Text.class);
-
-        FileInputFormat.setInputPaths(invertedIndex, new Path(inputPath));
-        FileOutputFormat.setOutputPath(invertedIndex, new Path(outputPath));
-
-        invertedIndex.setMapperClass(InvertedIndexMapper.class);
         invertedIndex.setReducerClass(InvertedIndexReducer.class);
-
+        
         return invertedIndex.waitForCompletion(true);
 
     }
