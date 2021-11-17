@@ -4,6 +4,7 @@ import java.util.StringTokenizer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.io.*;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -14,11 +15,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-
-
-
 import org.apache.hadoop.conf.Configured;
-
 import org.apache.hadoop.io.FloatWritable;
 
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
@@ -26,9 +23,6 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-
-
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -268,8 +262,7 @@ public static class WikiPageLinksMapper extends Mapper<LongWritable, Text, Text,
 }
 
 
-  public static class WikiLinksReducer extends Reducer<Text,Text,Text,Text> {
-  
+  public static class WikiLinksReducer extends Reducer<Text,Text,Text,Text> { 
 
     public void reduce(Text keyword, Iterable<Text> docIDList, Context context) 
     		throws IOException, InterruptedException {
@@ -311,6 +304,8 @@ public static class WikiPageLinksMapper extends Mapper<LongWritable, Text, Text,
         Job xmlHakker = Job.getInstance(conf, "xmlHakker");
         xmlHakker.setJarByClass(InvertedIndex.class);
 
+        System.out.println("los argumentos son: " + args[0] + " " + args[1]);
+
         // Input / Mapper
         FileInputFormat.addInputPath(xmlHakker, new Path(args[0]));
         xmlHakker.setInputFormatClass(XmlInputFormat.class);
@@ -320,11 +315,9 @@ public static class WikiPageLinksMapper extends Mapper<LongWritable, Text, Text,
         // Output / Reducer
         FileOutputFormat.setOutputPath(xmlHakker, new Path(args[1]));
         xmlHakker.setOutputFormatClass(TextOutputFormat.class);
-
         xmlHakker.setOutputKeyClass(Text.class);
         xmlHakker.setOutputValueClass(Text.class);
         xmlHakker.setReducerClass(WikiLinksReducer.class);
-
 	    
 	    System.exit(xmlHakker.waitForCompletion(true) ? 0 : 1);
 

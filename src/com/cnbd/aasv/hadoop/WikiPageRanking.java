@@ -56,7 +56,7 @@ public class WikiPageRanking extends Configured implements Tool {
         isCompleted = runRankOrdering(lastResultPath, "wiki/result");
         isCompleted = runWordCount("wiki/result", "wiki/count");
 
-        isCompleted = runInvertedIndex("wiki/result", "wiki/inverted");
+        isCompleted = runInvertedIndex("wiki/ranking/iter00", "wiki/inverted");
 
         if (!isCompleted) return 1;
         return 0;
