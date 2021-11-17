@@ -153,20 +153,20 @@ public class WikiPageRanking extends Configured implements Tool {
         Job invertedIndex = Job.getInstance(conf, "invertedIndex");
         invertedIndex.setJarByClass(WikiPageRanking.class);
 
-        // Input / Mapper
-        FileInputFormat.addInputPath(invertedIndex, new Path(inputPath));
-        invertedIndex.setInputFormatClass(XmlInputFormat.class);
         invertedIndex.setMapperClass(InvertedIndexMapper.class);
+        invertedIndex.setReducerClass(InvertedIndexReducer.class);
+        
+        invertedIndex.setInputFormatClass(XmlInputFormat.class);
         invertedIndex.setMapOutputKeyClass(Text.class);
-
-        // Output / Reducer
-        FileOutputFormat.setOutputPath(invertedIndex, new Path(outputPath));        
+        invertedIndex.setMapOutputValueClass(Text.class);
 
         invertedIndex.setOutputKeyClass(Text.class);
         invertedIndex.setOutputValueClass(Text.class);
-        invertedIndex.setReducerClass(InvertedIndexReducer.class);
-        invertedIndex.setOutputFormatClass(TextOutputFormat.class);        
-        
+        invertedIndex.setOutputFormatClass(TextOutputFormat.class);    
+
+        FileInputFormat.addInputPath(invertedIndex, new Path(inputPath));
+        FileOutputFormat.setOutputPath(invertedIndex, new Path(outputPath));  
+
         return invertedIndex.waitForCompletion(true);
 
     }
