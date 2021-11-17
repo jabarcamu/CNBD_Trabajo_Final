@@ -160,12 +160,12 @@ public class WikiPageRanking extends Configured implements Tool {
         invertedIndex.setMapOutputKeyClass(Text.class);
 
         // Output / Reducer
-        FileOutputFormat.setOutputPath(invertedIndex, new Path(outputPath));
-        invertedIndex.setOutputFormatClass(TextOutputFormat.class);
+        FileOutputFormat.setOutputPath(invertedIndex, new Path(outputPath));        
 
         invertedIndex.setOutputKeyClass(Text.class);
         invertedIndex.setOutputValueClass(Text.class);
         invertedIndex.setReducerClass(InvertedIndexReducer.class);
+        invertedIndex.setOutputFormatClass(TextOutputFormat.class);        
         
         return invertedIndex.waitForCompletion(true);
 
