@@ -2,10 +2,11 @@ package com.cnbd.aasv.hadoop.job5;
 
 import java.io.IOException;
 import java.util.StringTokenizer;
+import java.nio.charset.CharacterCodingException;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.wikiclean.WikiClean;
+// import org.wikiclean.WikiClean;
 
 public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text> {
 
@@ -19,10 +20,10 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text> 
     // private final static IntWritable one = new IntWritable(1);    
 
     private Text word = new Text();
-    private WikiClean cleaner = new WikiClean.Builder()
-            .withFooter(false)
-            .withTitle(false)
-            .build();
+    // private WikiClean cleaner = new WikiClean.Builder()
+    //         .withFooter(false)
+    //         .withTitle(false)
+    //         .build();
 
     @Override
     public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
@@ -60,19 +61,27 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text> 
         return pageString.contains(":");
     }
 
-    private String[] parseTitleAndText(Text value) {
+    private String[] parseTitleAndText(Text value) throws CharacterCodingException{
         String[] titleAndText = new String[2];
+        
+        int start = value.find("<title>");
+        int end = value.find("</title>", start);
+        start += 7; //aniadir tamanho <title> .
+        
+        titleAndText[0] = Text.decode(value.getBytes(), start, end-start);
 
-        String valueStr = value.toString();
-
-        titleAndText[0] = cleaner.getTitle(valueStr);
-
-        try {
-            titleAndText[1] = cleaner.clean(valueStr);
-        } catch (IllegalArgumentException e) {            
-            throw e;
+        start = value.find("<text");
+        start = value.find(">", start);
+        end = value.find("</text>", start);
+        start += 1;
+        
+        if(start == -1 || end == -1) {
+            return new String[]{"",""};
         }
-
+        
+        titleAndText[1] = Text.decode(value.getBytes(), start, end-start);
+        
         return titleAndText;
     }
+
 }
