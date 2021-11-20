@@ -1,6 +1,8 @@
 
 import os
 from flask import Flask, render_template, request, jsonify
+from flask_ngrok import run_with_ngrok
+
 from load_pages import *
 
 app = Flask(__name__)
@@ -68,4 +70,5 @@ def search():
 	
 
 if __name__ == '__main__':
-    app.run(debug = True, host='0.0.0.0', port=5000)
+    #app.run(debug = True, host='0.0.0.0', port=5000)
+    run_with_ngrok(app)

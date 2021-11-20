@@ -1,4 +1,4 @@
-from load_pages_cp import *
+from load_pages_w import *
 
 #print(hashmap_pagerank())
 #print(hashmap())
