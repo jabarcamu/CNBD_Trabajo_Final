@@ -1,6 +1,5 @@
 package com.cnbd.aasv.hadoop.job5;
 
-import java.util.regex.*;
 import java.io.IOException;
 import java.util.StringTokenizer;
 import java.nio.charset.CharacterCodingException;
@@ -53,12 +52,7 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text> 
 
         while (tokenizer.hasMoreTokens()) {
             String wordText = tokenizer.nextToken();
-            String filterKeyword = wordText.replaceAll("^[\"']+|[\"']+$", "");
-            
-            if(Pattern.matches("^[a-zA-Z]+$",filterKeyword) == false){
-              continue;
-            }
-            word.set(filterKeyword);
+            word.set(wordText);
             context.write(word, page);
         }
     }
