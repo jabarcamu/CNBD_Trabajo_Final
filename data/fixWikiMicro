@@ -1,0 +1,19 @@
+#!/bin/bash
+
+echo "Dando formato Xml al archivo wikimicro.txt"
+
+echo "Se agrega pages a cada inicio de title y final de revision"
+
+dir_input="../wiki/in/"
+
+$(mkdir -p $dir_input)
+
+$(cp wiki-micro.txt $dir_input)
+
+nombre_archivo=$dir_input"wiki-micro.txt"
+
+chmod +x $nombre_archivo
+
+sed -i 's/<title>/<page><title>/g' $nombre_archivo
+
+sed -i 's/<\/revision>/<\/revision><\/page>/g' $nombre_archivo

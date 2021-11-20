@@ -1,0 +1,101 @@
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-family: 'Poppins', sans-serif;
+}
+
+* {
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+}
+
+main {
+    flex: 1;
+}
+
+main .logo {
+    display: block;
+    margin: 0px auto;
+    margin-top: 107px;   
+}
+
+.box {
+    width: 100%;
+    position: relative; 
+    text-align: center;
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+}
+
+.box .tsearch {
+    display: block;
+    border: 3px solid #ddd;
+    color: rgba(20, 18, 18, 0.87);
+    font-size: 20px;
+    padding: 10px;
+    padding-left: 20px;
+    border-radius: 15px;
+    width: 50%;
+    outline: none;
+}
+
+.container {
+    display: block;
+    margin: 0px auto;
+    padding-bottom: 40px;
+}
+
+#pages p {
+    text-align: center;
+    padding-top: 40px;
+    font-size: 20px;
+}
+
+.box .icon-search {
+    width: 25px;
+    opacity: .4;
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    outline: none;
+    margin: 0 auto;
+    margin-left: 70%;
+}
+
+#pages {
+    display: block;
+    margin: 0px auto;
+    align-items: center;
+}
+
+.follow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.follow * {
+    margin: 5px;
+}
+
+.follow .fab {
+    color: white;
+    font-size: 25px;
+    margin-top: 10px;
+}
+
+.footer {
+    background-color: black;
+    height: 100px;
+    margin: 10px 0px 0px;
+    text-align: center;
+}
+
+.footer p {
+    color: #fff;
+    font-size: 20px;
+    padding-top: 10px;
+}
